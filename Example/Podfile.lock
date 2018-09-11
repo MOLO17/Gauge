@@ -4,7 +4,9 @@ PODS:
   - FBSnapshotTestCase/Core (2.1.4)
   - FBSnapshotTestCase/SwiftSupport (2.1.4):
     - FBSnapshotTestCase/Core
-  - Gauge (0.1.0)
+  - Gauge (0.1.0):
+    - TinyConstraints (~> 3.2.1)
+  - TinyConstraints (3.2.1)
 
 DEPENDENCIES:
   - FBSnapshotTestCase (~> 2.1.4)
@@ -13,6 +15,7 @@ DEPENDENCIES:
 SPEC REPOS:
   https://github.com/cocoapods/specs.git:
     - FBSnapshotTestCase
+    - TinyConstraints
 
 EXTERNAL SOURCES:
   Gauge:
@@ -20,8 +23,9 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   FBSnapshotTestCase: 094f9f314decbabe373b87cc339bea235a63e07a
-  Gauge: 3fad6df6563cc2530a5c189799d31314821a38a2
+  Gauge: 12b71898419d5ee345e0b76de0973fca95a69757
+  TinyConstraints: 5ca700872f726c49d10829d7b00f31e4ec731f36
 
-PODFILE CHECKSUM: 7ca22c33551e16e6e9b9baa79072b72e803dc78a
+PODFILE CHECKSUM: 4106f7f3785a9f49f3593f3f8e6ac65c9ba902f8
 
 COCOAPODS: 1.5.3
