@@ -23,8 +23,9 @@ import UIKit
 ///   `Value` label, in order to display the value in a textual manner. To
 ///   disable this just set the `emptyBottomSliceAngle` to `0` and set the
 ///   `valueBindingBehaviour` to `.none`.
-/// * Min/max values: at the sides of the the empty area the `Gauge` displays
-///   the minimum and maximum values it supports.
+/// * Min/max values: (optional) at the sides of the the empty area the `Gauge`
+///   displays the minimum and maximum values it supports. The `Gauge` exposes
+///   the labels, so you can just hide them.
 /// * Inactive sections: (optional, with default) The `Gauge` dims the sections
 ///   (if any) that don't contain the current `Value`.
 ///
