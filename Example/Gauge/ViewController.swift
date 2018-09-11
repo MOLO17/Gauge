@@ -6,19 +6,29 @@
 //  Copyright (c) 2018 Alessandro Vendruscolo. All rights reserved.
 //
 
+import Gauge
+import TinyConstraints
 import UIKit
 
 class ViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        // Do any additional setup after loading the view, typically from a nib.
+
+        view.addSubview(defaultGauge)
+        defaultGauge.topToSuperview()
+        defaultGauge.leading(to: view)
+        defaultGauge.width(320)
+        defaultGauge.height(320)
+
     }
 
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
-    }
+    private lazy var defaultGauge: Gauge = {
+        let g = Gauge(bindingBehaviour: .title)
+        g.range = 0...100
+        g.value = 50
 
+        return g
+    }()
 }
 
