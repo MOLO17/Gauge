@@ -21,13 +21,14 @@ public struct DefaultGaugeHand: GaugeHand {
     }
 
     public func update(
+        value: Value,
         angle: Angle,
         valueInner: CGPoint,
         valueOuter: CGPoint,
-        value: Value,
+        origin: Angle,
+        originInner: CGPoint,
+        originOuter: CGPoint,
         bounds: CGRect,
-        zeroInner: CGPoint,
-        zeroOuter: CGPoint,
         trackThickness: CGFloat
     ) {
         let center = CGPoint(x: bounds.midX, y: bounds.midY)

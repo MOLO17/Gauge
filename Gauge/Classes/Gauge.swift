@@ -21,13 +21,15 @@ import UIKit
 /// * Empty area: (optional, with default) at the bottom there's an arc (which
 ///   can be 0) which won't be used by the `Gauge` track and leaves room for the
 ///   `Value` label, in order to display the value in a textual manner. To
-///   disable this just set the `emptyBottomSliceAngle` to `0` and set the
+///   disable this just set the `emptySlice` to `0` and set the
 ///   `valueBindingBehaviour` to `.none`.
 /// * Min/max values: (optional) at the sides of the the empty area the `Gauge`
 ///   displays the minimum and maximum values it supports. The `Gauge` exposes
 ///   the labels, so you can just hide them.
 /// * Inactive sections: (optional, with default) The `Gauge` dims the sections
 ///   (if any) that don't contain the current `Value`.
+/// * Offset: (optional, with default) the `Gauge`'s values can easily be offset
+///   by providing a different origin `Angle`.
 ///
 /// **Layout**
 /// The gauge can have any size and aspect ratio, but the drawing will always be
@@ -141,19 +143,38 @@ open class Gauge: UIView {
     }
 
     /// The color to use when drawing the main track. The main track will be
-    /// always visible in the bottom area.
+    /// always visible, at least in the empty slice area.
+    /// - SeeAlso: `emptySliceAngle`.
     public var trackColor: UIColor = .lightGray {
         didSet {
             updateTrackLayerColor()
         }
     }
 
-    /// The angle of the slice that will always be empty. The slice is
-    /// positioned at the bottom of the gauge. If you want a gauge that has a
-    /// straight base (so a circle cut in half) you'd set this to 180°.
-    /// Changing this changes the usable track length and the position of the
+    /// The position of the origin (the minimum `Value`). You can change it to
+    /// offset the starting point of the `Gauge` to suit better your
+    /// requirements. This changes the location of the `emptySliceAngle` and the
+    /// min and max labels, as it effectively _rotates_ the `Gauge`.
+    /// Thus, the position of the maximum `Value` will be at
+    /// `origin + 360° - emptySliceAngle`.
+    public var origin = Angle(radians: .pi * 3 / 2) {
+        didSet {
+            updateSections()
+            updateMinMaxValueLabelConstraints()
+            updateHandLayer()
+        }
+    }
+
+    /// The `Angle` of the slice that will always be empty. The slice is
+    /// positioned around the minimum value of the gauge. If you want a gauge
+    /// that has a straight base (so a circle cut in half) you'd set this to
+    /// 180°.
+    /// Changing this changes the _usable_ track length and the position of the
     /// min and max labels.
-    public var emptyBottomSliceAngle = Angle(radians: .pi / 4) {
+    /// Note: this is an `Angle` measured at the center of the `Gauge` and
+    /// extends from the middle of the `origin`.
+    /// - SeeAlso: origin
+    public var emptySlice = Angle(radians: .pi / 4) {
         didSet {
             updateSections()
             updateMinMaxValueLabelConstraints()
@@ -404,6 +425,7 @@ open class Gauge: UIView {
 
         // and delegate hand updating
         hand.update(
+            value: value,
             angle: endAngle,
             valueInner: CGPoint(
                 x: realOriginX - cos(endAngleRadians) * (width - trackThickness),
@@ -413,16 +435,16 @@ open class Gauge: UIView {
                 x: realOriginX - cos(endAngleRadians) * width,
                 y: realOriginY - sin(endAngleRadians) * width
             ),
-            value: value,
-            bounds: bounds,
-            zeroInner: CGPoint(
+            origin: origin,
+            originInner: CGPoint(
                 x: realOriginX - cos(startAngleRadians) * (width - trackThickness),
                 y: realOriginY - sin(startAngleRadians) * (width - trackThickness)
             ),
-            zeroOuter: CGPoint(
+            originOuter: CGPoint(
                 x: realOriginX - cos(startAngleRadians) * width,
                 y: realOriginY - sin(startAngleRadians) * width
             ),
+            bounds: bounds,
             trackThickness: trackThickness
         )
     }
@@ -510,7 +532,7 @@ open class Gauge: UIView {
 
         // And then take in consideration the lower arc length, as it will "eat
         // up" space by remaining empty.
-        let shorterAnglePercentage = 100 * (360 - emptyBottomSliceAngle) / 360
+        let shorterAnglePercentage = 100 * (360 - emptySlice) / 360
         let shorterAngle = fullAngle * shorterAnglePercentage / 100
 
         // Consider that the min value is on the left side of the bottom empty
@@ -683,12 +705,16 @@ open class Gauge: UIView {
     /// The binding behaviour to apply.
     private let valueBindingBehaviour: BindingBehaviour
 
+    /// The position around the track where the maximum value (range.upperBound)
+    /// lies.
     private var minValueAnglePosition: Angle {
-        return (Angle(270) - emptyBottomSliceAngle / 2).normalizedDegrees
+        return (origin - emptySlice / 2).normalizedDegrees
     }
 
+    /// The position around the track where the minimum value (range.lowerBound)
+    /// lies.
     private var maxValueAnglePosition: Angle {
-        return (Angle(270) + emptyBottomSliceAngle / 2).normalizedDegrees
+        return (origin + emptySlice / 2).normalizedDegrees
     }
 
     private lazy var trackLayer = self.makeTrackLayer()

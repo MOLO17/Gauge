@@ -33,6 +33,7 @@ class ViewController: UIViewController {
         let g = Gauge(bindingBehaviour: .title)
         g.range = 0...100
         g.value = 50
+        g.origin = Angle(radians: .pi)
 
         return g
     }()
@@ -41,7 +42,8 @@ class ViewController: UIViewController {
         let g = Gauge(bindingBehaviour: .none)
         g.range = 0...100
         g.value = 60
-        g.emptyBottomSliceAngle = 0
+        g.origin = Angle(radians: .pi / 2)
+        g.emptySlice = 0
         g.minValueLabel.isHidden = true
         g.maxValueLabel.isHidden = true
         g.hand = GaugeCustomHand()
@@ -57,13 +59,14 @@ private struct GaugeCustomHand: GaugeHand {
     }
 
     func update(
+        value: Value,
         angle: Angle,
         valueInner: CGPoint,
         valueOuter: CGPoint,
-        value: Value,
+        origin: Angle,
+        originInner: CGPoint,
+        originOuter: CGPoint,
         bounds: CGRect,
-        zeroInner: CGPoint,
-        zeroOuter: CGPoint,
         trackThickness: CGFloat
     ) {
 
@@ -72,11 +75,13 @@ private struct GaugeCustomHand: GaugeHand {
         // Pay attention that UIBezierPath has a different coordinate system
         // compared the Angle type (because Quartz ¯\_(ツ)_/¯) so convert
         // received angle values to make sure the drawing is correct.
+        // 360 - <the provided angle> is the conversion we need: Quartz works
+        // with the exact opposite coordinate system.
         _hand.path = UIBezierPath(
             arcCenter: center,
             radius: bounds.width / 2 - trackThickness / 2,
-            startAngle: .pi / 2,
-            endAngle: (360 - angle).radians,
+            startAngle: (Angle(360) - origin).radians,
+            endAngle: (Angle(360) - angle).radians,
             clockwise: true
         ).cgPath
 
