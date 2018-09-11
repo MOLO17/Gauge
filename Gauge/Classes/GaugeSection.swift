@@ -16,7 +16,12 @@ public extension Gauge {
     /// want to highlight the `0...25` range with a different color. You can
     /// create a `Section` with that range and provide its color.
     /// Note: it's important that the scale is the same.
-    struct Section {
+    public struct Section {
+
+        public init(range: ClosedRange<Value>, color: UIColor) {
+            self.range = range
+            self.color = color
+        }
 
         /// The range of the section.
         let range: ClosedRange<Value>

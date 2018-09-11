@@ -34,6 +34,10 @@ class ViewController: UIViewController {
         g.range = 0...100
         g.value = 50
         g.origin = Angle(radians: .pi)
+        g.sections = [
+            Gauge.Section(range: 0...40, color: .yellow),
+            Gauge.Section(range: 40...60, color: .red)
+        ]
 
         return g
     }()
@@ -47,6 +51,10 @@ class ViewController: UIViewController {
         g.minValueLabel.isHidden = true
         g.maxValueLabel.isHidden = true
         g.hand = GaugeCustomHand()
+        g.sections = [
+            Gauge.Section(range: 0...40, color: .yellow),
+            Gauge.Section(range: 40...60, color: .red),
+        ]
 
         return g
     }()
