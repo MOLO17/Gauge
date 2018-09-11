@@ -70,6 +70,7 @@ open class Gauge: UIView {
         updateTrackLayerColor()
         rebuildSections()
         updateSections()
+        updateStackViewConstraints()
         updateMinMaxValueLabelConstraints()
         updateMinMaxValueLabelText()
     }
@@ -160,6 +161,7 @@ open class Gauge: UIView {
     public var origin = Angle(radians: .pi * 3 / 2) {
         didSet {
             updateSections()
+            updateStackViewConstraints()
             updateMinMaxValueLabelConstraints()
             updateHandLayer()
         }
@@ -177,6 +179,7 @@ open class Gauge: UIView {
     public var emptySlice = Angle(radians: .pi / 4) {
         didSet {
             updateSections()
+            updateStackViewConstraints()
             updateMinMaxValueLabelConstraints()
             updateHandLayer()
         }
@@ -184,7 +187,11 @@ open class Gauge: UIView {
 
     /// Labels (min/max and section's) will be inset by this value. If you set
     /// it to zero labels will effectively touch the track on the inside.
-    public var labelInsetMargin: CGFloat = 4
+    public var labelInsetMargin: CGFloat = 4 {
+        didSet {
+            updateStackViewConstraints()
+        }
+    }
 
     /// The number formatter to use to format the values displayed by the
     /// `Gauge`.
@@ -280,9 +287,9 @@ open class Gauge: UIView {
         addSubview(maxValueLabel)
         addSubview(sectionsTrackContainer)
         addSubview(sectionsValueLabelContainer)
-        addSubview(measuringStackView)
-        measuringStackView.addArrangedSubview(valueLabel)
-        measuringStackView.addArrangedSubview(titleLabel)
+        addSubview(mainLabelsStackView)
+        mainLabelsStackView.addArrangedSubview(valueLabel)
+        mainLabelsStackView.addArrangedSubview(titleLabel)
 
         // The sections track container will be as big as the gauge itself.
         sectionsTrackContainer.topAnchor.constraint(equalTo: topAnchor)
@@ -304,12 +311,6 @@ open class Gauge: UIView {
             .isActive = true
         sectionsValueLabelContainer.rightAnchor.constraint(equalTo: rightAnchor)
             .isActive = true
-
-        // The stack view will be positioned to the empty space at the bottom of the gauge
-        measuringStackView.centerXToSuperview()
-        measuringStackViewYConstraint = measuringStackView.bottomAnchor
-            .constraint(equalTo: bottomAnchor)
-        measuringStackViewYConstraint?.isActive = true
 
         // Finally, above everything, we'll have the hand.
         layer.addSublayer(hand.layer)
@@ -411,7 +412,6 @@ open class Gauge: UIView {
         maxValueLabel.setHugging(.required, for: .horizontal)
     }
 
-
     private func updateHandLayer() {
 
         // Do some math
@@ -449,8 +449,22 @@ open class Gauge: UIView {
         )
     }
 
+    /// Updates the min and max value label constraints. This places the labels
+    /// on the sides of the empty bottom slice.
     private func updateStackViewConstraints() {
-        measuringStackViewYConstraint?.constant = -trackThickness / 2
+
+        let stackViewConstraints = makeConstraints(
+            for: mainLabelsStackView,
+            in: self,
+            at: origin,
+            oldXConstraint: mainLabelsStackViewXConstraint,
+            oldYConstraint: mainLabelsStackViewYConstraint
+        )
+
+        mainLabelsStackViewXConstraint = stackViewConstraints.0
+        mainLabelsStackViewYConstraint = stackViewConstraints.1
+        mainLabelsStackView.setHugging(.required, for: .horizontal)
+        mainLabelsStackView.setHugging(.required, for: .vertical)
     }
 
     private func updateMinMaxValueLabelText() {
@@ -564,7 +578,7 @@ open class Gauge: UIView {
     // 5) Profit
     @discardableResult
     private func makeConstraints(
-        for label: UILabel,
+        for view: UIView,
         in containerView: UIView,
         at angle: Angle,
         oldXConstraint: NSLayoutConstraint? = nil,
@@ -576,7 +590,7 @@ open class Gauge: UIView {
 
         let (xAnchor, yAnchor) = anchorsFor(
             angle: angle,
-            of: label
+            of: view
         )
 
         let labelInset = anchorsInset(forAngle: angle)
@@ -743,8 +757,10 @@ open class Gauge: UIView {
         return v
     }()
 
-    /// The stack view which contains the measuring.
-    private lazy var measuringStackView: UIStackView = {
+    /// The stack view which contains the main labels.
+    /// - SeeAlso: `valueLabel`.
+    /// - SeeAlso: `titleLabel`.
+    private lazy var mainLabelsStackView: UIStackView = {
         let s = UIStackView()
         s.translatesAutoresizingMaskIntoConstraints = false
         s.axis = .vertical
@@ -757,5 +773,6 @@ open class Gauge: UIView {
     private var maxValueLabelXConstraint: NSLayoutConstraint?
     private var maxValueLabelYConstraint: NSLayoutConstraint?
 
-    private var measuringStackViewYConstraint: NSLayoutConstraint?
+    private var mainLabelsStackViewXConstraint: NSLayoutConstraint?
+    private var mainLabelsStackViewYConstraint: NSLayoutConstraint?
 }
