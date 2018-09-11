@@ -55,6 +55,10 @@ open class Gauge: UIView {
 
     // MARK: Init
 
+    /// Initializes a new `Gauge` with the provided binding behavior.
+    ///
+    /// - Parameter bindingBehaviour: The binding behavior to use.
+    /// - SeeAlso: `valueBindingBehaviour`.
     public init(bindingBehaviour: BindingBehaviour = .value) {
         valueBindingBehaviour = bindingBehaviour
 
@@ -74,7 +78,7 @@ open class Gauge: UIView {
 
     // MARK: Public properties
 
-    /// The range of valid values displayed by the gauge.
+    /// The range of valid `Value`s displayed by the `Gauge`.
     public var range: ClosedRange<Value> = 0...100 {
         didSet {
             rebuildSections()
@@ -129,7 +133,7 @@ open class Gauge: UIView {
     public var inactiveSectionsAlpha: Float = 0.3
 
     /// The tickness of the track. It's used to draw the main track and the
-    /// sections track.
+    /// sections track (if present).
     public var trackThickness: CGFloat = 10 {
         didSet {
             setNeedsLayout()
@@ -158,15 +162,16 @@ open class Gauge: UIView {
     }
 
     /// Labels (min/max and section's) will be inset by this value. If you set
-    /// it to zero labels will touch the track on the inside.
+    /// it to zero labels will effectively touch the track on the inside.
     public var labelInsetMargin: CGFloat = 4
 
-    /// The number formatter to use to format the values displayed by the guage.
+    /// The number formatter to use to format the values displayed by the
+    /// `Gauge`.
     ///
-    /// The number is used to format these values:
-    /// * min and max range values
-    /// * current value
-    /// * section values
+    /// The number formatter is used to format these values:
+    /// * Min and max range values;
+    /// * Current value;
+    /// * Section values.
     public var numberFormatter = NumberFormatter() {
         didSet {
             updateMinMaxValueLabelText()
@@ -180,13 +185,8 @@ open class Gauge: UIView {
         didSet {
             oldValue.layer.removeFromSuperlayer()
             layer.addSublayer(hand.layer)
+            updateHandLayer()
         }
-    }
-
-    /// A closure used as factory to make the labels displaying the section
-    /// bounds.
-    public var makeSectionValueLabel: () -> UILabel = {
-        return UILabel()
     }
 
     /// The label used to display the lower bound of the range.
@@ -195,7 +195,18 @@ open class Gauge: UIView {
     /// The label used to display the upper bound of the range.
     public private (set) lazy var maxValueLabel = self.makeMinMaxValueLabel()
 
+    /// A closure used as factory to make the labels displaying the section
+    /// bounds.
+    ///
+    /// By default, the factory creates simple labels, you can provide your own
+    /// factory to return a different kind of labels.
+    /// - SeeAlso: `sections`.
+    public var makeSectionValueLabel: () -> UILabel = {
+        return UILabel()
+    }
+
     /// The labels currently displayed to describe the sections bounds.
+    /// - SeeAlso: `sections`.
     public var sectionValueLabels: [UILabel] {
         return _sectionValueLabels.map { $0.label }
     }
@@ -594,7 +605,7 @@ open class Gauge: UIView {
     private func anchorsFor(
         angle: Angle,
         of view: UIView
-        ) -> ((NSLayoutXAxisAnchor, NSLayoutYAxisAnchor)) {
+    ) -> ((NSLayoutXAxisAnchor, NSLayoutYAxisAnchor)) {
 
         let sliceWidth = Angle(45) // 360° / 8
         let halfStep = sliceWidth / 2
