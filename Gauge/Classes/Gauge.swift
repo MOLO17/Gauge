@@ -233,8 +233,7 @@ open class Gauge: UIView {
     /// The hand to use to visually display the value.
     public var hand: GaugeHand = DefaultGaugeHand() {
         didSet {
-            oldValue.layer.removeFromSuperlayer()
-            layer.addSublayer(hand.layer)
+            buildHandLayerHierarchy(removing: oldValue)
             updateHandLayer()
         }
     }
@@ -316,6 +315,14 @@ open class Gauge: UIView {
             .isActive = true
 
         // Finally, above everything, we'll have the hand.
+        buildHandLayerHierarchy(removing: nil)
+    }
+
+    /// Builds the layer hierarchy for displaying the current `GaugeHand`.
+    ///
+    /// - Parameter removing: Optionally remove a prior `GaugeHand`.
+    private func buildHandLayerHierarchy(removing oldHand: GaugeHand?) {
+        oldHand?.layer.removeFromSuperlayer()
         layer.addSublayer(hand.layer)
     }
 
