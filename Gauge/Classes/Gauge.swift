@@ -56,6 +56,17 @@ open class Gauge: UIView {
         case none
     }
 
+    /// An enum that defines the dimming of inactive sections.
+    public enum InactiveSectionsDimming {
+
+        /// Inactive sections dimming is disabled.
+        case none
+
+        /// Inactive sections dimming is enabled, setting the section alpha to
+        /// the provided value.
+        case enabled(alpha: Float)
+    }
+
     // MARK: Init
 
     /// Initializes a new `Gauge` with the provided binding behavior.
@@ -108,7 +119,7 @@ open class Gauge: UIView {
     public var value: Value = 0 {
         didSet {
             updateHandLayer()
-            dimInactiveSections()
+            dimInactiveSectionsIfNeeded()
             updateValueLabel()
         }
     }
@@ -168,10 +179,11 @@ open class Gauge: UIView {
 
     /// Whether inactive sections will be displayed with a lowered alpha, to
     /// help users focus on the value.
-    public var dimsInactiveSections = true
-
-    /// The lowered alpha value for inactive sections.
-    public var inactiveSectionsAlpha: Float = 0.3
+    public var inactiveSectionsDimming: InactiveSectionsDimming = .enabled(alpha: 0.3) {
+        didSet {
+            dimInactiveSectionsIfNeeded()
+        }
+    }
 
     /// The position of the origin (the minimum `Value`). You can change it to
     /// offset the starting point of the `Gauge` to suit better your
@@ -517,12 +529,13 @@ open class Gauge: UIView {
     }
 
     /// Dims inactive sections, if needed.
-    private func dimInactiveSections() {
+    /// - SeeAlso: `inactiveSectionsDimming`.
+    private func dimInactiveSectionsIfNeeded() {
 
-        guard dimsInactiveSections else { return }
+        guard case let .enabled(alpha) = inactiveSectionsDimming else { return }
 
         // First dim all sections.
-        sectionTrackLayers.forEach { $0.opacity = inactiveSectionsAlpha }
+        sectionTrackLayers.forEach { $0.opacity = alpha }
 
         // Now we have to find the section of the current value, and get its
         // corresponding layer.
