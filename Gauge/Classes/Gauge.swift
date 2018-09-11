@@ -348,6 +348,21 @@ open class Gauge: UIView {
         trackLayer.strokeColor = trackColor.cgColor
     }
 
+    /// If the last section has an upper bound that's lower than the `Gauge`
+    /// range's upper bound, then include the section to draw the value label
+    /// around the track.
+    ///
+    /// - Returns: The sections to use as basis to draw section labels.
+    private func fullSectionsForLabels() -> [Section] {
+
+        if let last = sortedSections.last,
+            last.range.upperBound < range.upperBound {
+            return sortedSections
+        }
+
+        return Array(sortedSections.dropLast())
+    }
+
     /// Re-creates the section tracks and labels, removing the currently visible
     /// ones. Sections will be configured as needed, but their layers will be
     /// empty, so at this point it will look like there are no sections.
@@ -371,8 +386,8 @@ open class Gauge: UIView {
         // Sort by the lowerbound, so we're sure that the section at index 0
         // will be displayed before the one at index 1.
         sectionsValueLabelContainer.subviews.forEach { $0.removeFromSuperview() }
-        _sectionValueLabels = sortedSections
-            .dropLast()
+
+        _sectionValueLabels = fullSectionsForLabels()
             .map { section in
                 let clamped = section.range.clamped(to: range)
                 let label = makeSectionValueLabel()
@@ -408,7 +423,7 @@ open class Gauge: UIView {
         // about each section (drawn above).
         // Sort by the lowerbound, so we're sure that the section at index 0
         // will be displayed before the one at index 1.
-        zip(_sectionValueLabels, sortedSections.dropLast())
+        zip(_sectionValueLabels, fullSectionsForLabels())
             .forEach { label, section in
                 let clamped = section.range.clamped(to: range)
                 label.label.text = numberFormatter.string(from: clamped.upperBound as NSNumber)
