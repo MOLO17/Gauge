@@ -176,7 +176,12 @@ open class Gauge: UIView {
     }
 
     /// The hand to use to visually display the value.
-    public var hand: GaugeHand = DefaultGaugeHand()
+    public var hand: GaugeHand = DefaultGaugeHand() {
+        didSet {
+            oldValue.layer.removeFromSuperlayer()
+            layer.addSublayer(hand.layer)
+        }
+    }
 
     /// A closure used as factory to make the labels displaying the section
     /// bounds.
@@ -378,6 +383,8 @@ open class Gauge: UIView {
     private func updateHandLayer() {
 
         // Do some math
+        let startAngle = valueToShortArcAngle(range.lowerBound)
+        let startAngleRadians = startAngle.normalizedDegrees.radians
         let endAngle = valueToShortArcAngle(value)
         let endAngleRadians = (180 - endAngle).normalizedDegrees.radians
         let width = bounds.width / 2
@@ -387,16 +394,25 @@ open class Gauge: UIView {
         // and delegate hand updating
         hand.update(
             angle: endAngle,
-            innerTarget: CGPoint(
+            valueInner: CGPoint(
                 x: realOriginX - cos(endAngleRadians) * (width - trackThickness),
                 y: realOriginY - sin(endAngleRadians) * (width - trackThickness)
             ),
-            outerTarget: CGPoint(
+            valueOuter: CGPoint(
                 x: realOriginX - cos(endAngleRadians) * width,
                 y: realOriginY - sin(endAngleRadians) * width
             ),
             value: value,
-            bounds: bounds
+            bounds: bounds,
+            zeroInner: CGPoint(
+                x: realOriginX - cos(startAngleRadians) * (width - trackThickness),
+                y: realOriginY - sin(startAngleRadians) * (width - trackThickness)
+            ),
+            zeroOuter: CGPoint(
+                x: realOriginX - cos(startAngleRadians) * width,
+                y: realOriginY - sin(startAngleRadians) * width
+            ),
+            trackThickness: trackThickness
         )
     }
 
@@ -504,7 +520,7 @@ open class Gauge: UIView {
             startAngle: (360 - startAngle).radians,
             endAngle: (360 - endAngle).radians,
             clockwise: true
-            ).cgPath
+        ).cgPath
         layer.lineWidth = trackThickness
     }
 

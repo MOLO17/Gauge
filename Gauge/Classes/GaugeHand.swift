@@ -28,17 +28,25 @@ public protocol GaugeHand {
     ///   - angle: The computed angle (used for the rotation) of the hand. It's
     ///   in cartesian coordinate space. By using the angle for rotation the
     ///   hand should point to the target.
-    ///   - innerTarget: The point of the target. It touches on the inner side
-    ///   of the track.
-    ///   - outerTarget: The point of the target. It touches on the outer side
-    ///   of the track.
     ///   - value: The current value of the Gauge.
+    ///   - valueInner: The point, within the provided bounds, touching the
+    ///   inner side of the track at the `Value` position.
+    ///   - valueOuter: The point, within the provided bounds, touching the
+    ///   outer side of the track at the `Value` position.
     ///   - bounds: The bounds of the Gauge.
+    ///   - zeroInner: The point, within the provided bounds, touching the inner
+    ///   side of the track at the 0 position.
+    ///   - zeroOuter: The point, within the provided bounds, touching the outer
+    ///   side of the track at the 0 position.
+    ///   - trackThickness: The width of the track of the `Gauge`.
     func update(
         angle: Angle,
-        innerTarget: CGPoint,
-        outerTarget: CGPoint,
+        valueInner: CGPoint,
+        valueOuter: CGPoint,
         value: Value,
-        bounds: CGRect
+        bounds: CGRect,
+        zeroInner: CGPoint,
+        zeroOuter: CGPoint,
+        trackThickness: CGFloat
     )
 }

@@ -22,10 +22,13 @@ public struct DefaultGaugeHand: GaugeHand {
 
     public func update(
         angle: Angle,
-        innerTarget: CGPoint,
-        outerTarget: CGPoint,
+        valueInner: CGPoint,
+        valueOuter: CGPoint,
         value: Value,
-        bounds: CGRect
+        bounds: CGRect,
+        zeroInner: CGPoint,
+        zeroOuter: CGPoint,
+        trackThickness: CGFloat
     ) {
         let center = CGPoint(x: bounds.midX, y: bounds.midY)
         let path = UIBezierPath(
@@ -36,7 +39,7 @@ public struct DefaultGaugeHand: GaugeHand {
             clockwise: true
         )
         path.move(to: center)
-        path.addLine(to: outerTarget)
+        path.addLine(to: valueOuter)
         _hand.path = path.cgPath
         _hand.frame = bounds
     }
