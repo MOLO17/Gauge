@@ -91,6 +91,12 @@ open class Gauge: UIView {
         }
     }
 
+    /// The label used to display the lower bound of the range.
+    public private (set) lazy var minValueLabel = self.makeMinMaxValueLabel()
+
+    /// The label used to display the upper bound of the range.
+    public private (set) lazy var maxValueLabel = self.makeMinMaxValueLabel()
+
     /// The `Value` to display. Changing this will update the hand and the
     /// label (if needed).
     ///
@@ -103,6 +109,21 @@ open class Gauge: UIView {
             updateHandLayer()
             dimInactiveSections()
             updateValueLabel()
+        }
+    }
+
+    /// The number formatter to use to format the values displayed by the
+    /// `Gauge`.
+    ///
+    /// The number formatter is used to format these values:
+    /// * Min and max range values;
+    /// * Current value;
+    /// * Section values.
+    public var numberFormatter = NumberFormatter() {
+        didSet {
+            updateMinMaxValueLabelText()
+            updateValueLabel()
+            updateSections()
         }
     }
 
@@ -128,29 +149,28 @@ open class Gauge: UIView {
         }
     }
 
+    /// A closure used as factory to make the labels displaying the section
+    /// bounds.
+    ///
+    /// By default, the factory creates simple labels, you can provide your own
+    /// factory to return a different kind of labels.
+    /// - SeeAlso: `sections`.
+    public var makeSectionValueLabel: () -> UILabel = {
+        return UILabel()
+    }
+
+    /// The labels currently displayed to describe the sections bounds.
+    /// - SeeAlso: `sections`.
+    public var sectionValueLabels: [UILabel] {
+        return _sectionValueLabels.map { $0.label }
+    }
+
     /// Whether inactive sections will be displayed with a lowered alpha, to
     /// help users focus on the value.
     public var dimsInactiveSections = true
 
     /// The lowered alpha value for inactive sections.
     public var inactiveSectionsAlpha: Float = 0.3
-
-    /// The tickness of the track. It's used to draw the main track and the
-    /// sections track (if present).
-    public var trackThickness: CGFloat = 10 {
-        didSet {
-            setNeedsLayout()
-        }
-    }
-
-    /// The color to use when drawing the main track. The main track will be
-    /// always visible, at least in the empty slice area.
-    /// - SeeAlso: `emptySliceAngle`.
-    public var trackColor: UIColor = .lightGray {
-        didSet {
-            updateTrackLayerColor()
-        }
-    }
 
     /// The position of the origin (the minimum `Value`). You can change it to
     /// offset the starting point of the `Gauge` to suit better your
@@ -193,18 +213,20 @@ open class Gauge: UIView {
         }
     }
 
-    /// The number formatter to use to format the values displayed by the
-    /// `Gauge`.
-    ///
-    /// The number formatter is used to format these values:
-    /// * Min and max range values;
-    /// * Current value;
-    /// * Section values.
-    public var numberFormatter = NumberFormatter() {
+    /// The tickness of the track. It's used to draw the main track and the
+    /// sections track (if present).
+    public var trackThickness: CGFloat = 10 {
         didSet {
-            updateMinMaxValueLabelText()
-            updateValueLabel()
-            updateSections()
+            setNeedsLayout()
+        }
+    }
+
+    /// The color to use when drawing the main track. The main track will be
+    /// always visible, at least in the empty slice area.
+    /// - SeeAlso: `emptySliceAngle`.
+    public var trackColor: UIColor = .lightGray {
+        didSet {
+            updateTrackLayerColor()
         }
     }
 
@@ -217,27 +239,8 @@ open class Gauge: UIView {
         }
     }
 
-    /// The label used to display the lower bound of the range.
-    public private (set) lazy var minValueLabel = self.makeMinMaxValueLabel()
-
-    /// The label used to display the upper bound of the range.
-    public private (set) lazy var maxValueLabel = self.makeMinMaxValueLabel()
-
-    /// A closure used as factory to make the labels displaying the section
-    /// bounds.
-    ///
-    /// By default, the factory creates simple labels, you can provide your own
-    /// factory to return a different kind of labels.
-    /// - SeeAlso: `sections`.
-    public var makeSectionValueLabel: () -> UILabel = {
-        return UILabel()
-    }
-
-    /// The labels currently displayed to describe the sections bounds.
-    /// - SeeAlso: `sections`.
-    public var sectionValueLabels: [UILabel] {
-        return _sectionValueLabels.map { $0.label }
-    }
+    /// The binding behaviour to apply.
+    public var valueBindingBehaviour: BindingBehaviour
 
     /// The label used to display the `Value`. You can customize it, the guage
     /// by default binds the value to this label and only changes
@@ -715,9 +718,6 @@ open class Gauge: UIView {
     }
 
     // MARK: - Private properties
-
-    /// The binding behaviour to apply.
-    private let valueBindingBehaviour: BindingBehaviour
 
     /// The position around the track where the maximum value (range.upperBound)
     /// lies.
