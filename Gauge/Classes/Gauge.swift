@@ -42,7 +42,8 @@ open class Gauge: UIView {
 
     // MARK: Types
 
-    /// An enum that defines the automatic behaviour of the gauge value.
+    /// An enum that defines the automatic binding behaviour of the `Gauge`
+    /// `Value`.
     public enum BindingBehaviour {
 
         /// Binds the value to the valueLabel.
@@ -321,16 +322,25 @@ open class Gauge: UIView {
     /// Builds the layer hierarchy for displaying the current `GaugeHand`.
     ///
     /// - Parameter removing: Optionally remove a prior `GaugeHand`.
+    /// - SeeAlso: `hand`.
     private func buildHandLayerHierarchy(removing oldHand: GaugeHand?) {
         oldHand?.layer.removeFromSuperlayer()
         layer.addSublayer(hand.layer)
     }
 
+    /// Updates the `trackLayer` to use the current `trackColor`.
+    ///
+    /// - SeeAlso: `trackLayer`.
+    /// - SeeAlso: `trackColor`.
     private func updateTrackLayerColor() {
         trackLayer.strokeColor = trackColor.cgColor
     }
 
-    /// Re-creates the section tracks and labels.
+    /// Re-creates the section tracks and labels, removing the currently visible
+    /// ones. Sections will be configured as needed, but their layers will be
+    /// empty, so at this point it will look like there are no sections.
+    /// This will also set initial constraints for the labels of the sections.
+    /// - SeeAlso: `updateSections`.
     private func rebuildSections() {
 
         // Redraw all section tracks, which highlight with their own color each
@@ -365,7 +375,8 @@ open class Gauge: UIView {
             }
     }
 
-    /// Updates the layout of the sections. Tracks will be redrawn, labels will
+    /// Updates the layout of the sections, effectively showing the range of
+    /// each section. Tracks will be redrawn, labels will
     /// be moved.
     private func updateSections() {
 
@@ -394,7 +405,7 @@ open class Gauge: UIView {
     }
 
     /// Updates the min and max value label constraints. This places the labels
-    /// on the sides of the empty bottom slice.
+    /// on the sides of the empty slice.
     private func updateMinMaxValueLabelConstraints() {
 
         let minValueLabelConstraints = makeConstraints(
@@ -422,9 +433,12 @@ open class Gauge: UIView {
         maxValueLabel.setHugging(.required, for: .horizontal)
     }
 
+    /// Updates the hand layer so it will point or generally display the current
+    /// value.
+    /// - SeeAlso: `value`.
     private func updateHandLayer() {
 
-        // Do some math
+        // Do some math...
         let startAngle = valueToShortArcAngle(range.lowerBound)
         let startAngleRadians = startAngle.normalizedDegrees.radians
         let endAngle = valueToShortArcAngle(value)
@@ -433,7 +447,7 @@ open class Gauge: UIView {
         let realOriginX = bounds.midX
         let realOriginY = bounds.midY
 
-        // and delegate hand updating
+        // ...And delegate hand updating.
         hand.update(
             value: value,
             angle: endAngle,
@@ -460,7 +474,8 @@ open class Gauge: UIView {
     }
 
     /// Updates the min and max value label constraints. This places the labels
-    /// on the sides of the empty bottom slice.
+    /// in the empty area near the empty slice.
+    /// - SeeAlso: `emptySlice`.
     private func updateStackViewConstraints() {
 
         let stackViewConstraints = makeConstraints(
@@ -477,11 +492,19 @@ open class Gauge: UIView {
         mainLabelsStackView.setHugging(.required, for: .vertical)
     }
 
+    /// Updates the content of the minimum and maximum values label, formatting
+    /// the range bounds.
+    /// - SeeAlso: `range`.
+    /// - SeeAlso: `numberFormatter`.
     private func updateMinMaxValueLabelText() {
         minValueLabel.text = numberFormatter.string(from: range.lowerBound as NSNumber)
         maxValueLabel.text = numberFormatter.string(from: range.upperBound as NSNumber)
     }
 
+    /// Updates the labels to display the current `Value`, depending by the
+    /// behavior.
+    /// - SeeAlso: `valueBindingBehaviour`.
+    /// - SeeAlso: `value`.
     private func updateValueLabel() {
         switch valueBindingBehaviour {
         case .value:
@@ -493,6 +516,7 @@ open class Gauge: UIView {
         }
     }
 
+    /// Dims inactive sections, if needed.
     private func dimInactiveSections() {
 
         guard dimsInactiveSections else { return }
