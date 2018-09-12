@@ -30,6 +30,8 @@ import UIKit
 ///   (if any) that don't contain the current `Value`.
 /// * Offset: (optional, with default) the `Gauge`'s values can easily be offset
 ///   by providing a different origin `Angle`.
+/// * Section labels: (optional, with default) you can customize the labels and
+///   their position, if you want them inside or outside the `Gauge`.
 ///
 /// **Layout**
 /// The gauge can have any size and aspect ratio, but the drawing will always be
@@ -168,6 +170,17 @@ open class Gauge: UIView {
     /// - SeeAlso: `sections`.
     public var sectionValueLabelFactory: GaugeSectionLabelFactory = DefaultGaugeSectionLabelFactory()
 
+    /// Whether to place the section value labels inside the `Gauge`.
+    /// Note: setting this to `false` will place labels outside of the track.
+    /// Labels might end up being outside of the bounds of the `Gauge`.
+    public var sectionValueLabelInside = true {
+        didSet {
+            updateSections()
+            updateStackViewConstraints()
+            updateMinMaxValueLabelConstraints()
+        }
+    }
+
     /// Whether inactive sections will be displayed with a lowered alpha, to
     /// help users focus on the value.
     public var inactiveSectionsDimming: InactiveSectionsDimming = .enabled(alpha: 0.3) {
@@ -211,9 +224,14 @@ open class Gauge: UIView {
 
     /// Labels (min/max and section's) will be inset by this value. If you set
     /// it to zero labels will effectively touch the track on the inside.
+    /// A positive value moves the labels closer to the center.
+    /// If the `Gauge` is set the place section labels outside of the track, a
+    /// positive value will move labels farther from the center.
     public var labelInsetMargin: CGFloat = 4 {
         didSet {
+            updateSections()
             updateStackViewConstraints()
+            updateMinMaxValueLabelConstraints()
         }
     }
 
@@ -390,7 +408,8 @@ open class Gauge: UIView {
                 let (x, y) = makeConstraints(
                     for: label.view,
                     in: sectionsValueLabelContainer,
-                    at: valueToShortArcAngle(clamped.upperBound)
+                    at: valueToShortArcAngle(clamped.upperBound),
+                    placeViewInsideTrack: sectionValueLabelInside
                 )
                 label.activeXConstraint = x
                 label.activeYConstraint = y
@@ -435,7 +454,7 @@ open class Gauge: UIView {
                 // Place the label in the final position, updating constraints.
                 if let x = label.activeXConstraint,
                     let y = label.activeYConstraint {
-                    updateConstraints(x: x, y: y, at: angle)
+                    updateConstraints(x: x, y: y, at: angle, placeViewInsideTrack: sectionValueLabelInside)
                 }
 
                 // Delegate label updating.
@@ -465,6 +484,7 @@ open class Gauge: UIView {
             for: minValueLabel,
             in: self,
             at: minValueAnglePosition,
+            placeViewInsideTrack: sectionValueLabelInside,
             oldXConstraint: minValueLabelXConstraint,
             oldYConstraint: minValueLabelYConstraint
         )
@@ -477,6 +497,7 @@ open class Gauge: UIView {
             for: maxValueLabel,
             in: self,
             at: maxValueAnglePosition,
+            placeViewInsideTrack: sectionValueLabelInside,
             oldXConstraint: maxValueLabelXConstraint,
             oldYConstraint: maxValueLabelYConstraint
         )
@@ -535,6 +556,7 @@ open class Gauge: UIView {
             for: mainLabelsStackView,
             in: self,
             at: origin,
+            placeViewInsideTrack: true,
             oldXConstraint: mainLabelsStackViewXConstraint,
             oldYConstraint: mainLabelsStackViewYConstraint
         )
@@ -669,6 +691,7 @@ open class Gauge: UIView {
         for view: UIView,
         in containerView: UIView,
         at angle: Angle,
+        placeViewInsideTrack: Bool,
         oldXConstraint: NSLayoutConstraint? = nil,
         oldYConstraint: NSLayoutConstraint? = nil
     ) -> (NSLayoutConstraint, NSLayoutConstraint) {
@@ -678,10 +701,14 @@ open class Gauge: UIView {
 
         let (xAnchor, yAnchor) = anchorsFor(
             angle: angle,
-            of: view
+            of: view,
+            placeViewInsideTrack: placeViewInsideTrack
         )
 
-        let labelInset = anchorsInset(forAngle: angle)
+        let labelInset = anchorsInset(
+            forAngle: angle,
+            placeViewInsideTrack: placeViewInsideTrack
+        )
 
         let x = xAnchor.constraint(equalTo: containerView.centerXAnchor, constant: labelInset.x)
         let y = yAnchor.constraint(equalTo: containerView.centerYAnchor, constant: labelInset.y)
@@ -695,10 +722,14 @@ open class Gauge: UIView {
     private func updateConstraints(
         x xConstraint: NSLayoutConstraint,
         y yConstraint: NSLayoutConstraint,
-        at angle: Angle
+        at angle: Angle,
+        placeViewInsideTrack: Bool
     ) {
 
-        let labelInset = anchorsInset(forAngle: angle)
+        let labelInset = anchorsInset(
+            forAngle: angle,
+            placeViewInsideTrack: placeViewInsideTrack
+        )
         xConstraint.constant = labelInset.x
         yConstraint.constant = labelInset.y
     }
@@ -724,11 +755,15 @@ open class Gauge: UIView {
     ///   circle where the view should be placed..
     ///   - view: The view that should be placed inside the circle (superview).
     ///   It's used to get the anchors.
+    ///   - placeViewInsideTrack: Whether the view should stay inside the circle
+    ///   delimited by the track. This will effectively make the function return
+    ///   the opposite anchor pair.
     /// - Returns: The pairs of layout anchors to use to setup constraints.
     ///   Using those pairs the view can be placed correctly in the superview.
     private func anchorsFor(
         angle: Angle,
-        of view: UIView
+        of view: UIView,
+        placeViewInsideTrack: Bool
     ) -> ((NSLayoutXAxisAnchor, NSLayoutYAxisAnchor)) {
 
         let sliceWidth = Angle(45) // 360° / 8
@@ -751,42 +786,77 @@ open class Gauge: UIView {
 
         let targetAngle = (angle + halfStep).normalizedDegrees
 
-        if sliceWidth * 0 ... sliceWidth * 1 ~= targetAngle {
-            return (view.trailingAnchor, view.centerYAnchor)
-        }
-        if sliceWidth * 1 ... sliceWidth * 2 ~= targetAngle {
-            return (view.trailingAnchor, view.topAnchor)
-        }
-        if sliceWidth * 2 ... sliceWidth * 3 ~= targetAngle {
-            return (view.centerXAnchor, view.topAnchor)
-        }
-        if sliceWidth * 3 ... sliceWidth * 4 ~= targetAngle {
+        if placeViewInsideTrack {
+
+            if sliceWidth * 0 ... sliceWidth * 1 ~= targetAngle {
+                return (view.trailingAnchor, view.centerYAnchor)
+            }
+            if sliceWidth * 1 ... sliceWidth * 2 ~= targetAngle {
+                return (view.trailingAnchor, view.topAnchor)
+            }
+            if sliceWidth * 2 ... sliceWidth * 3 ~= targetAngle {
+                return (view.centerXAnchor, view.topAnchor)
+            }
+            if sliceWidth * 3 ... sliceWidth * 4 ~= targetAngle {
+                return (view.leadingAnchor, view.topAnchor)
+            }
+            if sliceWidth * 4 ... sliceWidth * 5 ~= targetAngle {
+                return (view.leadingAnchor, view.centerYAnchor)
+            }
+            if sliceWidth * 5 ... sliceWidth * 6 ~= targetAngle {
+                return (view.leadingAnchor, view.bottomAnchor)
+            }
+            if sliceWidth * 6 ... sliceWidth * 7 ~= targetAngle {
+                return (view.centerXAnchor, view.bottomAnchor)
+            }
+
+            // Catch all:
+            // step * 7 ... step * 8 ~= angle + halfStep
+            return (view.trailingAnchor, view.bottomAnchor)
+
+        } else {
+
+            if sliceWidth * 0 ... sliceWidth * 1 ~= targetAngle {
+                return (view.leadingAnchor, view.centerYAnchor)
+            }
+            if sliceWidth * 1 ... sliceWidth * 2 ~= targetAngle {
+                return (view.leadingAnchor, view.bottomAnchor)
+            }
+            if sliceWidth * 2 ... sliceWidth * 3 ~= targetAngle {
+                return (view.centerXAnchor, view.bottomAnchor)
+            }
+            if sliceWidth * 3 ... sliceWidth * 4 ~= targetAngle {
+                return (view.trailingAnchor, view.bottomAnchor)
+            }
+            if sliceWidth * 4 ... sliceWidth * 5 ~= targetAngle {
+                return (view.trailingAnchor, view.centerYAnchor)
+            }
+            if sliceWidth * 5 ... sliceWidth * 6 ~= targetAngle {
+                return (view.trailingAnchor, view.topAnchor)
+            }
+            if sliceWidth * 6 ... sliceWidth * 7 ~= targetAngle {
+                return (view.centerXAnchor, view.topAnchor)
+            }
+
+            // Catch all:
+            // step * 7 ... step * 8 ~= angle + halfStep
             return (view.leadingAnchor, view.topAnchor)
         }
-        if sliceWidth * 4 ... sliceWidth * 5 ~= targetAngle {
-            return (view.leadingAnchor, view.centerYAnchor)
-        }
-        if sliceWidth * 5 ... sliceWidth * 6 ~= targetAngle {
-            return (view.leadingAnchor, view.bottomAnchor)
-        }
-        if sliceWidth * 6 ... sliceWidth * 7 ~= targetAngle {
-            return (view.centerXAnchor, view.bottomAnchor)
-        }
-
-        // Catch all:
-        // step * 7 ... step * 8 ~= angle + halfStep
-        return (view.trailingAnchor, view.bottomAnchor)
     }
 
-    private func anchorsInset(forAngle angle: Angle) -> (x: CGFloat, y: CGFloat) {
+    private func anchorsInset(
+        forAngle angle: Angle,
+        placeViewInsideTrack: Bool
+    ) -> (x: CGFloat, y: CGFloat) {
 
         let targetAngle = angle.normalizedDegrees
         let radians = targetAngle.radians
         let radius = bounds.width / 2
 
+        let thickness = placeViewInsideTrack ? -trackThickness : trackThickness
         return (
-            x: cos(radians) * (radius - trackThickness - labelInsetMargin),
-            y: -sin(radians) * (radius - trackThickness - labelInsetMargin)
+            x: cos(radians) * (radius + thickness - labelInsetMargin),
+            y: -sin(radians) * (radius + thickness - labelInsetMargin)
         )
     }
 
