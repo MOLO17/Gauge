@@ -71,13 +71,7 @@ open class Gauge: UIView {
 
     // MARK: Init
 
-    /// Initializes a new `Gauge` with the provided binding behavior.
-    ///
-    /// - Parameter bindingBehaviour: The binding behavior to use.
-    /// - SeeAlso: `valueBindingBehaviour`.
-    public init(bindingBehaviour: BindingBehaviour = .value) {
-        valueBindingBehaviour = bindingBehaviour
-
+    public init() {
         super.init(frame: .zero)
 
         buildViewHierarchy()
@@ -90,7 +84,15 @@ open class Gauge: UIView {
     }
 
     required public init?(coder aDecoder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
+        super.init(coder: aDecoder)
+
+        buildViewHierarchy()
+        updateTrackLayerColor()
+        rebuildSections()
+        updateSections()
+        updateStackViewConstraints()
+        updateMinMaxValueLabelConstraints()
+        updateMinMaxValueLabelText()
     }
 
     // MARK: Public properties
@@ -261,7 +263,7 @@ open class Gauge: UIView {
     }
 
     /// The binding behaviour to apply.
-    public var valueBindingBehaviour: BindingBehaviour
+    public var valueBindingBehaviour: BindingBehaviour = .title
 
     /// The label used to display the `Value`. You can customize it, the guage
     /// by default binds the value to this label and only changes
