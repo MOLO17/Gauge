@@ -151,6 +151,7 @@ open class Gauge: UIView {
     /// Internal note: you shouldn't use the sections property. Throughout the
     /// implementation always use `sortedSections` which is what you probably
     /// want.
+    /// - SeeAlso: `sortedSections`.
     public var sections: [Section] = [] {
         didSet {
             sortedSections = sections.sorted {
@@ -792,6 +793,9 @@ open class Gauge: UIView {
 
     private lazy var trackLayer = self.makeTrackLayer()
 
+    /// The array of sections, sorted by upper bound so they're sequential.
+    /// Note: you should use this instead of the original `section` array.
+    /// - SeeAlso: `sections`.
     private var sortedSections = [Section]()
 
     /// The view that will contain all the section tracks (which are just

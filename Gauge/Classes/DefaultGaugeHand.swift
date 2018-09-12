@@ -9,7 +9,7 @@
 import UIKit
 
 /// A default hand that's used by the Gauge.
-
+///
 /// It's a simple black hand that stays in the center of the Gauge and it's
 /// rotated accordingly, so it points to the current value in the Gauge range.
 public struct DefaultGaugeHand: GaugeHand {
