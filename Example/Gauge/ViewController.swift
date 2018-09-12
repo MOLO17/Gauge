@@ -15,39 +15,73 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        view.addSubview(defaultGauge)
-        defaultGauge.topToSuperview()
-        defaultGauge.leading(to: view)
-        defaultGauge.width(320)
-        defaultGauge.height(320)
+        view.addSubview(defaultGaugeTitle)
+        defaultGaugeTitle.leading(to: view, offset: 20)
+        defaultGaugeTitle.trailing(to: view, offset: -20)
+        defaultGaugeTitle.topToSuperview(offset: 32)
 
-        view.addSubview(gauge2)
-        gauge2.bottomToSuperview()
-        gauge2.trailing(to: view)
-        gauge2.width(320)
-        gauge2.height(320)
+        view.addSubview(defaultGauge)
+        defaultGauge.topToBottom(of: defaultGaugeTitle, offset: 16)
+        defaultGauge.centerXToSuperview()
+        defaultGauge.width(200)
+        defaultGauge.height(200)
+
+        view.addSubview(customGaugeTitle)
+        customGaugeTitle.leading(to: view, offset: 20)
+        customGaugeTitle.trailing(to: view, offset: -20)
+        customGaugeTitle.topToBottom(of: defaultGauge, offset: 16)
+
+        view.addSubview(customGauge)
+        customGauge.topToBottom(of: customGaugeTitle, offset: 16)
+        customGauge.centerXToSuperview()
+        customGauge.width(200)
+        customGauge.height(200)
 
     }
+
+    private lazy var defaultGaugeTitle: UILabel = {
+        let l = UILabel()
+        l.text = "Default Gauge, almost no configuration"
+        l.numberOfLines = 0
+        l.font = .boldSystemFont(ofSize: 18)
+
+        return l
+    }()
 
     private lazy var defaultGauge: Gauge = {
         let g = Gauge(bindingBehaviour: .title)
         g.range = 0...100
         g.value = 50
-        g.origin = Angle(radians: .pi)
         g.sections = [
-            Gauge.Section(range: 0...40, color: .yellow),
-            Gauge.Section(range: 40...60, color: .red)
+            Gauge.Section(range: 0...40, color: UIColor(red: 0.0902, green: 0.6314, blue: 0.5922, alpha: 1)),
+            Gauge.Section(range: 40...60, color: UIColor(red: 0.8745, green: 0.0431, blue: 0.1451, alpha: 1))
         ]
 
         return g
     }()
 
-    private lazy var gauge2: Gauge = {
-        let g = Gauge(bindingBehaviour: .none)
+    private lazy var customGaugeTitle: UILabel = {
+        let l = UILabel()
+        l.text = "Customized Gauge (hand, section values, colors, labels, etc)"
+        l.numberOfLines = 0
+        l.font = .boldSystemFont(ofSize: 18)
+
+        return l
+    }()
+
+    private lazy var customGauge: Gauge = {
+        let g = Gauge(bindingBehaviour: .title)
         g.range = 0...100
         g.value = 60
         g.origin = Angle(radians: .pi / 2)
         g.emptySlice = 0
+        g.trackThickness = 24
+        g.titleLabel.textAlignment = .center
+        g.titleLabel.font = .boldSystemFont(ofSize: 22)
+        g.valueLabel.text = "Value is:"
+        g.valueLabel.textAlignment = .center
+        g.valueLabel.font = .boldSystemFont(ofSize: 16)
+        g.trackColor = UIColor(red: 0.8374, green: 0.8374, blue: 0.8374, alpha: 1)
         g.minValueLabel.isHidden = true
         g.maxValueLabel.isHidden = true
         g.hand = GaugeCustomHand()
@@ -113,7 +147,7 @@ private struct GaugeCustomHand: GaugeHand {
 
     let _hand: CAShapeLayer = {
         let l = CAShapeLayer()
-        l.strokeColor = UIColor.green.cgColor
+        l.strokeColor = UIColor(red: 0.3608, green: 0.6824, blue: 0.3373, alpha: 1).cgColor
         l.fillColor = UIColor.clear.cgColor
 
         return l
@@ -155,7 +189,8 @@ private struct GaugeCustomSectionLabel: GaugeSectionLabel {
         // Now we have to draw the triangle pointing to the track. Will do a
         // a trick, drawing layer that's larger than the bounds. That layer will
         // be added to the _wrapper's superview layer to make things simpler.
-        let deltaSize: CGFloat = 20;
+        let deltaSize: CGFloat = 20
+        let angleDelta: CGFloat = 2
         _indicator.frame = bounds.insetBy(dx: -deltaSize, dy: -deltaSize)
         _wrapper.superview?.layer.addSublayer(_indicator)
 
@@ -168,12 +203,12 @@ private struct GaugeCustomSectionLabel: GaugeSectionLabel {
             y: deltaSize + realOriginY - sin((180 - angle).normalizedDegrees.radians) * (radius)
         )
         let trianglePoint1 = CGPoint(
-            x: deltaSize + realOriginX - cos((180 - angle + 1).normalizedDegrees.radians) * (radius + deltaSize),
-            y: deltaSize + realOriginY - sin((180 - angle + 1).normalizedDegrees.radians) * (radius + deltaSize)
+            x: deltaSize + realOriginX - cos((180 - angle + angleDelta).normalizedDegrees.radians) * (radius + deltaSize),
+            y: deltaSize + realOriginY - sin((180 - angle + angleDelta).normalizedDegrees.radians) * (radius + deltaSize)
         )
         let trianglePoint2 = CGPoint(
-            x: deltaSize + realOriginX - cos((180 - angle - 1).normalizedDegrees.radians) * (radius + deltaSize),
-            y: deltaSize + realOriginY - sin((180 - angle - 1).normalizedDegrees.radians) * (radius + deltaSize)
+            x: deltaSize + realOriginX - cos((180 - angle - angleDelta).normalizedDegrees.radians) * (radius + deltaSize),
+            y: deltaSize + realOriginY - sin((180 - angle - angleDelta).normalizedDegrees.radians) * (radius + deltaSize)
         )
 
         let path = UIBezierPath()
@@ -192,15 +227,16 @@ private struct GaugeCustomSectionLabel: GaugeSectionLabel {
         _indicator = CAShapeLayer()
 
         _wrapper.addSubview(_label)
-        _label.top(to: _wrapper, offset: 10)
-        _label.leading(to: _wrapper, offset: 20)
-        _label.bottom(to: _wrapper, offset: -10)
-        _label.trailing(to: _wrapper, offset: -20)
+        _label.top(to: _wrapper)
+        _label.leading(to: _wrapper, offset: 3)
+        _label.bottom(to: _wrapper)
+        _label.trailing(to: _wrapper, offset: -3)
 
         _label.textColor = .black
+        _label.font = .boldSystemFont(ofSize: 14)
 
-        _indicator.strokeColor = UIColor.green.cgColor
-        _indicator.fillColor = UIColor.clear.cgColor
+        _indicator.fillColor = UIColor(red: 0.3608, green: 0.6824, blue: 0.3373, alpha: 1).cgColor
+        _indicator.strokeColor = UIColor.clear.cgColor
     }
 
     // MARK: Private properties
