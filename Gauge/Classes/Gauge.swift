@@ -423,37 +423,37 @@ open class Gauge: UIView {
         zip(sectionValueLabels, fullSectionsForLabels())
             .forEach { label, section in
 
-                // Do some math...
+                // Do some math.
                 let clamped = section.range.clamped(to: range)
                 let formatted = numberFormatter.string(from: clamped.upperBound as NSNumber) ?? ""
                 let angle = valueToShortArcAngle(clamped.upperBound)
-                let endAngle = valueToShortArcAngle(value)
-                let endAngleRadians = (180 - endAngle).normalizedDegrees.radians
+                let angleRadians = (180 - angle).normalizedDegrees.radians
                 let width = bounds.width / 2
                 let realOriginX = bounds.midX
                 let realOriginY = bounds.midY
 
-                // ...And delegate label updating.
+                // Place the label in the final position, updating constraints.
+                if let x = label.activeXConstraint,
+                    let y = label.activeYConstraint {
+                    updateConstraints(x: x, y: y, at: angle)
+                }
+
+                // Delegate label updating.
                 label.update(
                     value: clamped.upperBound,
                     formattedValue: formatted,
                     angle: angle,
                     valueInner: CGPoint(
-                        x: realOriginX - cos(endAngleRadians) * (width - trackThickness),
-                        y: realOriginY - sin(endAngleRadians) * (width - trackThickness)
+                        x: realOriginX - cos(angleRadians) * (width - trackThickness),
+                        y: realOriginY - sin(angleRadians) * (width - trackThickness)
                     ),
                     valueOuter: CGPoint(
-                        x: realOriginX - cos(endAngleRadians) * width,
-                        y: realOriginY - sin(endAngleRadians) * width
+                        x: realOriginX - cos(angleRadians) * width,
+                        y: realOriginY - sin(angleRadians) * width
                     ),
                     bounds: bounds,
                     trackThickness: trackThickness
                 )
-
-                if let x = label.activeXConstraint,
-                    let y = label.activeYConstraint {
-                    updateConstraints(x: x, y: y, at: angle)
-                }
             }
     }
 
@@ -711,11 +711,11 @@ open class Gauge: UIView {
     /// will be the rightmost: `(x: .trailing, y: .centerY)`.
     /// +------------------------+
     /// |      115.5    67.5     |
-    /// |           ╲╱          |
-    /// | 157.5  -╲ |  ╱-  22.5 |
+    /// |           ╲╱           |
+    /// | 157.5  -╲ |  ╱-  22.5  |
     /// |            •           |
-    /// | 202.5  -╱ |  ╲- 337.5 |
-    /// |           ╱╲          |
+    /// | 202.5  -╱ |  ╲- 337.5  |
+    /// |           ╱╲           |
     /// |     247.5    292.5     |
     /// +------------------------+
     ///
