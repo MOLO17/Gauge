@@ -41,9 +41,9 @@ I won't report here all available options, but I suggest you to check the public
 ## TODO
 
 There're still some things missing:
-[] Tests;
-[] Better POP, for the main labels, min, and max labels;
-[] Adding SwiftLint.
+* [ ] Tests;
+* [ ] Better POP, for the main labels, min, and max labels;
+* [ ] Adding SwiftLint.
 
 ## Requirements
 
