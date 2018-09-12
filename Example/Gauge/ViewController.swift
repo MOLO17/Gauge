@@ -51,12 +51,21 @@ class ViewController: UIViewController {
         g.minValueLabel.isHidden = true
         g.maxValueLabel.isHidden = true
         g.hand = GaugeCustomHand()
+        g.sectionValueLabelInside = false
         g.sectionValueLabelFactory = GaugeCustomSectionLabelFactory()
         g.sections = [
-            Gauge.Section(range: 0...25, color: .yellow),
-            Gauge.Section(range: 25...50, color: .red),
-            Gauge.Section(range: 50...75, color: .yellow),
-            Gauge.Section(range: 75...100, color: .blue),
+            Gauge.Section(range: 0...10, color: .clear),
+            Gauge.Section(range: 10...20, color: .clear),
+            Gauge.Section(range: 20...25, color: .clear),
+            Gauge.Section(range: 25...30, color: .clear),
+            Gauge.Section(range: 30...40, color: .clear),
+            Gauge.Section(range: 40...50, color: .clear),
+            Gauge.Section(range: 50...60, color: .clear),
+            Gauge.Section(range: 60...70, color: .clear),
+            Gauge.Section(range: 70...75, color: .clear),
+            Gauge.Section(range: 75...80, color: .clear),
+            Gauge.Section(range: 80...90, color: .clear),
+            Gauge.Section(range: 90...100, color: .clear)
         ]
 
         return g
@@ -143,9 +152,36 @@ private struct GaugeCustomSectionLabel: GaugeSectionLabel {
 
         _label.text = formattedValue
 
-        let converted = _wrapper.superview?.convert(valueInner, to: _wrapper) ?? .zero
-        _indicator.position = converted
-        _indicator.transform = CATransform3DRotate(_indicator.transform, (angle - 90).radians, 0, 0, 1)
+        // Now we have to draw the triangle pointing to the track. Will do a
+        // a trick, drawing layer that's larger than the bounds. That layer will
+        // be added to the _wrapper's superview layer to make things simpler.
+        let deltaSize: CGFloat = 20;
+        _indicator.frame = bounds.insetBy(dx: -deltaSize, dy: -deltaSize)
+        _wrapper.superview?.layer.addSublayer(_indicator)
+
+        // Do some math to compute the vertices of the triangle.
+        let radius = bounds.width / 2
+        let realOriginX = bounds.midX
+        let realOriginY = bounds.midY
+        let trianglePoint0 = CGPoint(
+            x: deltaSize + realOriginX - cos((180 - angle).normalizedDegrees.radians) * (radius),
+            y: deltaSize + realOriginY - sin((180 - angle).normalizedDegrees.radians) * (radius)
+        )
+        let trianglePoint1 = CGPoint(
+            x: deltaSize + realOriginX - cos((180 - angle + 1).normalizedDegrees.radians) * (radius + deltaSize),
+            y: deltaSize + realOriginY - sin((180 - angle + 1).normalizedDegrees.radians) * (radius + deltaSize)
+        )
+        let trianglePoint2 = CGPoint(
+            x: deltaSize + realOriginX - cos((180 - angle - 1).normalizedDegrees.radians) * (radius + deltaSize),
+            y: deltaSize + realOriginY - sin((180 - angle - 1).normalizedDegrees.radians) * (radius + deltaSize)
+        )
+
+        let path = UIBezierPath()
+        path.move(to: trianglePoint0)
+        path.addLine(to: trianglePoint1)
+        path.addLine(to: trianglePoint2)
+        path.close()
+        _indicator.path = path.cgPath
     }
 
     // MARK: Init
@@ -156,30 +192,12 @@ private struct GaugeCustomSectionLabel: GaugeSectionLabel {
         _indicator = CAShapeLayer()
 
         _wrapper.addSubview(_label)
-        _label.top(to: _wrapper, offset: 15)
+        _label.top(to: _wrapper, offset: 10)
         _label.leading(to: _wrapper, offset: 20)
-        _label.bottom(to: _wrapper, offset: -15)
+        _label.bottom(to: _wrapper, offset: -10)
         _label.trailing(to: _wrapper, offset: -20)
 
-        _wrapper.layer.addSublayer(_indicator)
-
         _label.textColor = .black
-
-        // Draw a triangle, pointing to the top:
-        //  .
-        // /_\
-        // The triangle is in a rectangle 10pt wide and 20pt tall.
-        let trianglePath = UIBezierPath()
-        trianglePath.move(to: CGPoint(x: 5, y: 0))
-        trianglePath.addLine(to: CGPoint(x: 10, y: 20))
-        trianglePath.addLine(to: CGPoint(x: 0, y: 20))
-        trianglePath.close()
-        _indicator.path = trianglePath.cgPath
-        _indicator.bounds = CGRect(x: 0, y: 0, width: 10, height: 20)
-
-        // Set the anchor point to the top-tip of the triangle for precise
-        // rotations and placement.
-        _indicator.anchorPoint = CGPoint(x: 0.5, y: 0)
 
         _indicator.strokeColor = UIColor.green.cgColor
         _indicator.fillColor = UIColor.clear.cgColor
