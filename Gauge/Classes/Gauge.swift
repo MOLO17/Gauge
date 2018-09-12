@@ -162,21 +162,11 @@ open class Gauge: UIView {
         }
     }
 
-    /// A closure used as factory to make the labels displaying the section
-    /// bounds.
-    ///
+    /// The factory to make the labels displaying the section ranges.
     /// By default, the factory creates simple labels, you can provide your own
-    /// factory to return a different kind of labels.
+    /// to return a different kind of labels.
     /// - SeeAlso: `sections`.
-    public var makeSectionValueLabel: () -> UILabel = {
-        return UILabel()
-    }
-
-    /// The labels currently displayed to describe the sections bounds.
-    /// - SeeAlso: `sections`.
-    public var sectionValueLabels: [UILabel] {
-        return _sectionValueLabels.map { $0.label }
-    }
+    public var sectionValueLabelFactory: GaugeSectionLabelFactory = DefaultGaugeSectionLabelFactory()
 
     /// Whether inactive sections will be displayed with a lowered alpha, to
     /// help users focus on the value.
@@ -388,24 +378,30 @@ open class Gauge: UIView {
         // will be displayed before the one at index 1.
         sectionsValueLabelContainer.subviews.forEach { $0.removeFromSuperview() }
 
-        _sectionValueLabels = fullSectionsForLabels()
+        sectionValueLabels = fullSectionsForLabels()
             .map { section in
+
                 let clamped = section.range.clamped(to: range)
-                let label = makeSectionValueLabel()
-                sectionsValueLabelContainer.addSubview(label)
-                label.translatesAutoresizingMaskIntoConstraints = false
+
+                var label = sectionValueLabelFactory.make()
+                sectionsValueLabelContainer.addSubview(label.view)
+                label.view.translatesAutoresizingMaskIntoConstraints = false
+
                 let (x, y) = makeConstraints(
-                    for: label,
+                    for: label.view,
                     in: sectionsValueLabelContainer,
                     at: valueToShortArcAngle(clamped.upperBound)
                 )
-                return (label: label, xConstraint: x, yConstraint: y)
+                label.activeXConstraint = x
+                label.activeYConstraint = y
+
+                return label
             }
     }
 
     /// Updates the layout of the sections, effectively showing the range of
-    /// each section. Tracks will be redrawn, labels will
-    /// be moved.
+    /// each section. Tracks will be redrawn, labels will be updated
+    /// (delegation) and placed in the correct place.
     private func updateSections() {
 
         // Redraw all section tracks, which highlight with their own color each
@@ -424,11 +420,40 @@ open class Gauge: UIView {
         // about each section (drawn above).
         // Sort by the lowerbound, so we're sure that the section at index 0
         // will be displayed before the one at index 1.
-        zip(_sectionValueLabels, fullSectionsForLabels())
+        zip(sectionValueLabels, fullSectionsForLabels())
             .forEach { label, section in
+
+                // Do some math...
                 let clamped = section.range.clamped(to: range)
-                label.label.text = numberFormatter.string(from: clamped.upperBound as NSNumber)
-                updateConstraints(x: label.xConstraint, y: label.yConstraint, at: valueToShortArcAngle(clamped.upperBound))
+                let formatted = numberFormatter.string(from: clamped.upperBound as NSNumber) ?? ""
+                let angle = valueToShortArcAngle(clamped.upperBound)
+                let endAngle = valueToShortArcAngle(value)
+                let endAngleRadians = (180 - endAngle).normalizedDegrees.radians
+                let width = bounds.width / 2
+                let realOriginX = bounds.midX
+                let realOriginY = bounds.midY
+
+                // ...And delegate label updating.
+                label.update(
+                    value: clamped.upperBound,
+                    formattedValue: formatted,
+                    angle: angle,
+                    valueInner: CGPoint(
+                        x: realOriginX - cos(endAngleRadians) * (width - trackThickness),
+                        y: realOriginY - sin(endAngleRadians) * (width - trackThickness)
+                    ),
+                    valueOuter: CGPoint(
+                        x: realOriginX - cos(endAngleRadians) * width,
+                        y: realOriginY - sin(endAngleRadians) * width
+                    ),
+                    bounds: bounds,
+                    trackThickness: trackThickness
+                )
+
+                if let x = label.activeXConstraint,
+                    let y = label.activeYConstraint {
+                    updateConstraints(x: x, y: y, at: angle)
+                }
             }
     }
 
@@ -809,16 +834,16 @@ open class Gauge: UIView {
     /// The layers currently displayed to highlight the sections bounds.
     private var sectionTrackLayers = [CAShapeLayer]()
 
-    /// The labels currently displayed to show the sections bounds values. We
-    /// also store the x/y constraints for easy updates.
-    private var _sectionValueLabels = [(label: UILabel, xConstraint: NSLayoutConstraint, yConstraint: NSLayoutConstraint)]()
-
     /// The view that will contain all the section value labels.
     private lazy var sectionsValueLabelContainer: UIView = {
         let v = UIView()
         v.translatesAutoresizingMaskIntoConstraints = false
         return v
     }()
+
+    /// The labels currently displayed to describe the sections ranges.
+    /// - SeeAlso: `sections`.
+    private var sectionValueLabels = [GaugeSectionLabel]()
 
     /// The stack view which contains the main labels.
     /// - SeeAlso: `valueLabel`.
